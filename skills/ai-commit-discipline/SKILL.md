@@ -1,0 +1,95 @@
+---
+name: ai-commit-discipline
+description: Prepare, write, review, or validate AI-assisted commits. Use when Codex needs to commit changes, split a diff into reviewable commits, write a commit message, add AI attribution, record verification, install a commit-msg check, or enforce commit hygiene for agent-made code changes.
+license: MIT
+metadata:
+  author: Yuan
+  version: "0.1.0"
+---
+
+# AI Commit Discipline
+
+Use this skill to create commits that a maintainer can review without reconstructing the agent's reasoning from chat history. The commit must explain why the change exists, what user-visible effect it has, what changed at a high level, how the work was verified, and how AI participated.
+
+## Commit Workflow
+
+Follow this sequence before writing the commit:
+
+1. Inspect repository status and the current branch.
+2. Read the diff before deciding commit scope.
+3. Split unrelated changes into separate commits when the user did not explicitly request one combined commit.
+4. Verify the change with the strongest practical command for the repository.
+5. Write the commit message from the diff and the verification result.
+6. Run the bundled validator before committing when the repository allows local scripts.
+
+Do not hide uncertainty with fallback code or vague wording. If the diff exposes a broken existing mechanism, describe the fix to that mechanism instead of presenting the change as a workaround.
+
+## Commit Message
+
+Use this structure by default:
+
+```text
+<type>(<scope>): <subject>
+
+Why: <reason this change is needed>
+Impact: <user-visible behavior, or "None">
+
+Summary:
+- <change 1>
+- <change 2>
+
+Verification:
+- <command or manual check and result>
+
+AI-Agent: <tool or agent name and role>
+Convention-Version: YYYY-MM-DD
+```
+
+Choose a specific `type` from this list:
+
+- `feat` for a user-facing capability.
+- `fix` for a defect.
+- `docs` for documentation only.
+- `refactor` for behavior-preserving code changes.
+- `test` for tests only.
+- `chore` for maintenance.
+- `build` for build-system changes.
+- `ci` for CI changes.
+- `perf` for performance changes.
+- `style` for formatting only.
+
+Use a concise `scope` when the repository has a clear module, package, or feature name. Omit `scope` when the change spans the whole project.
+
+## Attribution
+
+Record AI participation with one trailer. Prefer `AI-Agent:` because it states that an agent participated without claiming sole authorship.
+
+Use these values consistently:
+
+- `AI-Agent: Codex assisted with implementation and verification`
+- `AI-Agent: Codex generated the initial patch; maintainer reviewed`
+- `Co-developed-by: Codex`
+- `AI-Generated: Codex`
+
+Add human `Co-authored-by:` trailers only when the repository uses GitHub co-author attribution and the required name and email are known.
+
+## Validation
+
+The bundled tool validates the message format and can install a local `commit-msg` hook:
+
+```bash
+python3 <skill>/scripts/validate_commit_message.py .git/COMMIT_EDITMSG
+python3 <skill>/scripts/validate_commit_message.py --install-hook
+```
+
+Use stricter summary requirements in repositories that expect fuller commit bodies:
+
+```bash
+python3 <skill>/scripts/validate_commit_message.py --min-summary-lines 4 --max-summary-lines 12 .git/COMMIT_EDITMSG
+```
+
+If the repository already has a commit convention, adapt the message to that convention first. Keep the AI attribution and verification record unless the project explicitly forbids them.
+
+## Final Report
+
+When reporting to the user, use plain language. State what changed, whether verification passed, and where the commit or hook now exists. Avoid internal reasoning unless the user asks for it.

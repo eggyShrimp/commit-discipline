@@ -1,0 +1,16 @@
+feat(commit): add AI-assisted commit checks
+
+Why: AI-assisted changes need a repeatable review trail.
+Impact: Maintainers can reject incomplete commit messages before review.
+
+Summary:
+- Add a reusable skill for preparing agent-made commits.
+- Add a validator that enforces intent, impact, verification, and attribution.
+- Add a local hook installer for commit-time enforcement.
+- Add tests and fixtures for valid and invalid messages.
+
+Verification:
+- python3 -m unittest discover -s tests passed.
+
+AI-Agent: Codex assisted with implementation and verification
+Convention-Version: 2026-05-18
