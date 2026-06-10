@@ -170,47 +170,6 @@ describe("RequiredFields", () => {
 });
 
 describe("BulletedSections", () => {
-  it("max summary lines exceeded", () => {
-    const v = new CommitMessageValidator({ ...DEFAULT_CONFIG, maxSummaryLines: 2 });
-    const msg = makeMsg(
-      "feat: x", "",
-      "Why: reason", "Impact: something", "",
-      "Summary:", "- a", "- b", "- c", "",
-      "Verification:", "- d", "",
-      "AI-Agent: Codex assisted",
-      "Convention-Version: 2026-01-01",
-    );
-    expect(v.validate(msg).some((e) => e.includes("at most 2"))).toBe(true);
-  });
-
-  it("min summary lines not met", () => {
-    const v = new CommitMessageValidator({ ...DEFAULT_CONFIG, minSummaryLines: 3 });
-    const msg = makeMsg(
-      "feat: x", "",
-      "Why: reason", "Impact: something", "",
-      "Summary:", "- a", "",
-      "Verification:", "- d", "",
-      "AI-Agent: Codex assisted",
-      "Convention-Version: 2026-01-01",
-    );
-    expect(v.validate(msg).some((e) => e.includes("at least 3"))).toBe(true);
-  });
-
-  it("summary with exact max", () => {
-    const v = new CommitMessageValidator({ ...DEFAULT_CONFIG, maxSummaryLines: 2 });
-    const msg = makeMsg(
-      "feat: x", "",
-      "Why: reason", "Impact: something", "",
-      "Summary:", "- a", "- b", "",
-      "Verification:", "- d", "",
-      "AI-Agent: Codex assisted",
-      "Convention-Version: 2026-01-01",
-    );
-    const errors = v.validate(msg);
-    const countErrors = errors.filter((e) => e.includes("at most") || e.includes("at least"));
-    expect(countErrors).toEqual([]);
-  });
-
   it("summary with blank separator before bullets", () => {
     const v = new CommitMessageValidator(DEFAULT_CONFIG);
     const msg = makeMsg(

@@ -51,11 +51,6 @@ describe("Integration", () => {
     expect(result.stderr).toContain("missing Convention-Version");
   });
 
-  it("strict summary count passes", () => {
-    const result = runValidator("--min-summary-lines", "4", VALID);
-    expect(result.exitCode).toBe(0);
-  });
-
   it("stdin input passes", () => {
     const content = readFileSync(VALID, "utf-8");
     const result = runValidatorWithInput(content);
@@ -71,14 +66,6 @@ describe("Integration", () => {
     const result = runValidator("--version");
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("commit-discipline");
-  });
-
-  it("print template", () => {
-    const result = runValidator("--print-template");
-    expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain("<type>(<scope>)");
-    expect(result.stdout).toContain("Why:");
-    expect(result.stdout).toContain("AI-Agent:");
   });
 
   it("json output valid", () => {
@@ -97,60 +84,63 @@ describe("Integration", () => {
     expect(data.errors.length).toBeGreaterThan(0);
   });
 
-  it("warn-only exit 0", () => {
-    const result = runValidator("--warn-only", INVALID);
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toContain("warnings");
-  });
-
-  it("warn-only with json", () => {
-    const result = runValidator("--warn-only", "--json", INVALID);
-    expect(result.exitCode).toBe(0);
-    const data = JSON.parse(result.stdout);
-    expect(data.valid).toBe(false);
-    expect(data.warn_only).toBe(true);
-  });
-
-  it("negative min summary lines", () => {
-    const result = runValidator("--min-summary-lines=-1", VALID);
-    expect(result.exitCode).toBe(2);
-    expect(result.stderr).toContain(">= 0");
-  });
-
-  it("max less than min", () => {
-    const result = runValidator("--min-summary-lines", "5", "--max-summary-lines", "3", VALID);
-    expect(result.exitCode).toBe(2);
-    expect(result.stderr).toContain(">= --min-summary-lines");
-  });
-
-  it("config file overrides defaults", () => {
+  it("config file with warn_only exits 0", () => {
     const dir = join(import.meta.dirname ?? process.cwd(), ".test-integration-tmp");
     mkdirSync(dir, { recursive: true });
     try {
-      writeFileSync(join(dir, ".commit-discipline.config.json"), JSON.stringify({ min_summary_lines: 5, max_summary_lines: 10 }));
-      const result = spawnSync("node", [SCRIPT, VALID], {
-        encoding: "utf-8",
-        cwd: dir,
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain("at least 5");
-    } finally {
-      rmSync(dir, { recursive: true });
-    }
-  });
-
-  it("CLI overrides config file", () => {
-    const dir = join(import.meta.dirname ?? process.cwd(), ".test-integration-tmp2");
-    mkdirSync(dir, { recursive: true });
-    try {
-      writeFileSync(join(dir, ".commit-discipline.config.json"), JSON.stringify({ min_summary_lines: 10 }));
-      const result = spawnSync("node", [SCRIPT, "--min-summary-lines", "1", VALID], {
+      writeFileSync(join(dir, ".commit-discipline.config.json"), JSON.stringify({ warn_only: true }));
+      const result = spawnSync("node", [SCRIPT, INVALID], {
         encoding: "utf-8",
         cwd: dir,
         stdio: ["pipe", "pipe", "pipe"],
       });
       expect(result.status).toBe(0);
+      expect(result.stderr).toContain("warnings");
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("config file with allow_merge_commits false validates merge", () => {
+    const dir = join(import.meta.dirname ?? process.cwd(), ".test-integration-tmp2");
+    mkdirSync(dir, { recursive: true });
+    try {
+      writeFileSync(join(dir, ".commit-discipline.config.json"), JSON.stringify({ allow_merge_commits: false }));
+      const result = spawnSync("node", [SCRIPT, VALID], {
+        encoding: "utf-8",
+        cwd: dir,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      expect(result.status).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it("install and remove hook", () => {
+    const dir = join(import.meta.dirname ?? process.cwd(), ".test-integration-hooks");
+    mkdirSync(dir, { recursive: true });
+    try {
+      spawnSync("git", ["init"], { cwd: dir, stdio: "pipe" });
+      const hookPath = join(dir, ".git", "hooks", "commit-msg");
+
+      const installResult = spawnSync("node", [SCRIPT, "--install-hook"], {
+        encoding: "utf-8",
+        cwd: dir,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      expect(installResult.status).toBe(0);
+      expect(installResult.stdout).toContain("installed");
+      expect(require("node:fs").existsSync(hookPath)).toBe(true);
+
+      const removeResult = spawnSync("node", [SCRIPT, "--remove-hook"], {
+        encoding: "utf-8",
+        cwd: dir,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      expect(removeResult.status).toBe(0);
+      expect(removeResult.stdout).toContain("removed");
+      expect(require("node:fs").existsSync(hookPath)).toBe(false);
     } finally {
       rmSync(dir, { recursive: true });
     }

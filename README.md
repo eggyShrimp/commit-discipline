@@ -2,6 +2,12 @@
 
 A reusable skill and linter for AI-assisted commits. Enforces structured commit messages with intent, impact, verification, and AI attribution.
 
+## Capabilities
+
+- **Validate commit messages** — enforce structured format with Why / Impact / Summary / Verification / AI-Agent / Convention-Version. Reads from file path or stdin.
+- **Manage git hooks** — install or remove a `commit-msg` hook that validates every commit automatically.
+- **JSON output** — machine-readable results for agent and CI integration.
+
 ## Install
 
 ```bash
@@ -14,13 +20,6 @@ Or clone directly:
 git clone <repo-url> ~/.agents/skills/commit-discipline
 ```
 
-## Contents
-
-- `SKILL.md` — agent workflow definition
-- `src/` — TypeScript source for the commit message linter
-- `references/commit-message-schema.md` — schema specification
-- `tests/` — validator tests
-
 ## Setup
 
 ```bash
@@ -28,70 +27,34 @@ npm install
 npm run build
 ```
 
-## Linter Usage
-
-Validate a commit message:
+## CLI
 
 ```bash
-node dist/index.js .git/COMMIT_EDITMSG
-```
-
-Install hooks:
-
-```bash
-node dist/index.js --install-hook
-node dist/index.js --install-template-hook
-```
-
-Print the default commit template:
-
-```bash
-node dist/index.js --print-template
-```
-
-Warn-only mode (exit 0 even on failure):
-
-```bash
-node dist/index.js --warn-only .git/COMMIT_EDITMSG
-```
-
-JSON output for CI:
-
-```bash
-node dist/index.js --json .git/COMMIT_EDITMSG
-```
-
-Strict summary length:
-
-```bash
-node dist/index.js \
-  --min-summary-lines 4 \
-  --max-summary-lines 12 \
-  .git/COMMIT_EDITMSG
+commit-discipline [message-file]     # validate (stdin if no file)
+commit-discipline --json [file]      # validate + JSON output
+commit-discipline --install-hook     # install commit-msg hook
+commit-discipline --remove-hook      # remove commit-msg hook
+commit-discipline --version          # print version
+commit-discipline --help             # show help
 ```
 
 ## Configuration
 
-Create `.commit-discipline.config.json` in the project root. CLI flags override config values.
+Create `.commit-discipline.config.json` in the project root.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `min_summary_lines` | int | `1` | Minimum bullet points in Summary section |
-| `max_summary_lines` | int | `12` | Maximum bullet points in Summary section |
-| `allowed_scopes` | list[str] | `null` | Scope whitelist. `null` means any scope is allowed |
-| `allow_merge_commits` | bool | `true` | Skip validation for git-generated merge messages |
-| `allow_revert_commits` | bool | `true` | Skip validation for git-generated revert messages |
-| `warn_only` | bool | `false` | Exit 0 even on validation failure (warnings only) |
-| `output_json` | bool | `false` | Output results as JSON |
-| `scan_staged` | bool | `false` | Scan staged diff for secrets before validating |
-| `template` | string | `null` | Custom commit template for `--print-template` and hooks |
+| `scan_staged` | `boolean` | `false` | Scan staged diff for secrets before validating |
+| `allow_merge_commits` | `boolean` | `true` | Skip validation for git-generated merge messages |
+| `allow_revert_commits` | `boolean` | `true` | Skip validation for git-generated revert messages |
+| `warn_only` | `boolean` | `false` | Exit 0 even on validation failure (warnings only) |
+| `output_json` | `boolean` | `false` | Output results as JSON |
+| `allowed_scopes` | `string[]` | `null` | Scope whitelist. `null` means any scope is allowed |
 
-Example (strict project):
+Example:
 
 ```json
 {
-  "min_summary_lines": 3,
-  "max_summary_lines": 8,
   "allowed_scopes": ["core", "api", "ui", "docs"],
   "allow_merge_commits": false,
   "allow_revert_commits": false,
@@ -99,14 +62,13 @@ Example (strict project):
 }
 ```
 
-Example (lenient project):
+## Exit Codes
 
-```json
-{
-  "min_summary_lines": 1,
-  "warn_only": true
-}
-```
+| Code | Meaning |
+|------|---------|
+| `0` | Validation passed (or `warn_only`) |
+| `1` | Validation failed |
+| `2` | Runtime error (file not found, malformed config, not in git repo) |
 
 ## Validate This Repository
 

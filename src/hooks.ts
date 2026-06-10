@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync, chmodSync, statSync } from "node:fs";
+import { mkdirSync, writeFileSync, chmodSync, statSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 function getGitDir(): string {
@@ -16,7 +16,8 @@ export function installHook(scriptPath: string): void {
   mkdirSync(join(gitDir, "hooks"), { recursive: true });
 
   const hook = `#!/bin/sh
-node "${scriptPath}" --scan-staged "$1"
+# commit-discipline hook
+node "${scriptPath}" "$1"
 `;
 
   writeFileSync(hookPath, hook, { mode: 0o755 });
@@ -24,21 +25,20 @@ node "${scriptPath}" --scan-staged "$1"
   console.log(`installed commit-msg hook: ${hookPath}`);
 }
 
-export function installTemplateHook(template: string): void {
+export function removeHook(): void {
   const gitDir = getGitDir();
-  const hookPath = join(gitDir, "hooks", "prepare-commit-msg");
-  mkdirSync(join(gitDir, "hooks"), { recursive: true });
+  const hookPath = join(gitDir, "hooks", "commit-msg");
 
-  const hook = `#!/bin/sh
-COMMIT_MSG_FILE="$1"
-if [ ! -s "$COMMIT_MSG_FILE" ]; then
-  cat > "$COMMIT_MSG_FILE" << 'COMMIT_DISCIPLINE_TEMPLATE'
-${template}
-COMMIT_DISCIPLINE_TEMPLATE
-fi
-`;
+  if (!existsSync(hookPath)) {
+    console.log("no commit-msg hook found");
+    return;
+  }
 
-  writeFileSync(hookPath, hook, { mode: 0o755 });
-  chmodSync(hookPath, statSync(hookPath).mode | 0o111);
-  console.log(`installed prepare-commit-msg hook: ${hookPath}`);
+  const content = execSync(`cat "${hookPath}"`, { encoding: "utf-8" });
+  if (!content.includes("commit-discipline")) {
+    throw new Error("commit-msg hook exists but was not installed by commit-discipline");
+  }
+
+  unlinkSync(hookPath);
+  console.log(`removed commit-msg hook: ${hookPath}`);
 }

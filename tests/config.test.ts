@@ -23,7 +23,7 @@ describe("loadConfig", () => {
   });
 
   it("loads valid config", () => {
-    const config = { min_summary_lines: 3, max_summary_lines: 8 };
+    const config = { allow_merge_commits: false, scan_staged: true };
     writeFileSync(join(TEST_DIR, "config.json"), JSON.stringify(config));
     const result = loadConfig(join(TEST_DIR, "config.json"));
     expect(result.config).toEqual(config);
@@ -45,7 +45,7 @@ describe("loadConfig", () => {
   });
 
   it("warns on wrong field type", () => {
-    const config = { min_summary_lines: "not a number" };
+    const config = { scan_staged: "not a boolean" };
     writeFileSync(join(TEST_DIR, "config.json"), JSON.stringify(config));
     const result = loadConfig(join(TEST_DIR, "config.json"));
     expect(result.config).not.toBeNull();
@@ -55,23 +55,25 @@ describe("loadConfig", () => {
 
 describe("applyConfig", () => {
   it("uses defaults when no config", () => {
-    const result = applyConfig({}, {});
-    expect(result.minSummaryLines).toBe(DEFAULT_CONFIG.minSummaryLines);
-    expect(result.maxSummaryLines).toBe(DEFAULT_CONFIG.maxSummaryLines);
+    const result = applyConfig({});
+    expect(result.scanStaged).toBe(DEFAULT_CONFIG.scanStaged);
+    expect(result.allowMergeCommits).toBe(DEFAULT_CONFIG.allowMergeCommits);
+    expect(result.allowRevertCommits).toBe(DEFAULT_CONFIG.allowRevertCommits);
   });
 
-  it("CLI overrides config file", () => {
-    const result = applyConfig({ min_summary_lines: 10 }, { minSummaryLines: 1 });
-    expect(result.minSummaryLines).toBe(1);
-  });
-
-  it("config file used when no CLI arg", () => {
-    const result = applyConfig({ min_summary_lines: 5 }, {});
-    expect(result.minSummaryLines).toBe(5);
+  it("loads values from config", () => {
+    const result = applyConfig({
+      scan_staged: true,
+      allow_merge_commits: false,
+      warn_only: true,
+    });
+    expect(result.scanStaged).toBe(true);
+    expect(result.allowMergeCommits).toBe(false);
+    expect(result.warnOnly).toBe(true);
   });
 
   it("scope whitelist from config", () => {
-    const result = applyConfig({ allowed_scopes: ["core", "api"] }, {});
+    const result = applyConfig({ allowed_scopes: ["core", "api"] });
     expect(result.allowedScopes).toEqual(["core", "api"]);
   });
 });

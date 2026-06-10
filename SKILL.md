@@ -84,12 +84,13 @@ The bundled tool validates the message format and can install a local `commit-ms
 ```bash
 node <skill>/dist/index.js .git/COMMIT_EDITMSG
 node <skill>/dist/index.js --install-hook
+node <skill>/dist/index.js --remove-hook
 ```
 
-Use stricter summary requirements in repositories that expect fuller commit bodies:
+For machine-readable output (useful in CI or agent pipelines):
 
 ```bash
-node <skill>/dist/index.js --min-summary-lines 4 --max-summary-lines 12 .git/COMMIT_EDITMSG
+node <skill>/dist/index.js --json .git/COMMIT_EDITMSG
 ```
 
 If the repository already has a commit convention, adapt the message to that convention first. Keep the AI attribution and verification record unless the project explicitly forbids them.

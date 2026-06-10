@@ -8,27 +8,21 @@ export interface ConfigResult {
 }
 
 const TYPE_CHECKS: Record<string, (v: unknown) => boolean> = {
-  min_summary_lines: (v) => typeof v === "number",
-  max_summary_lines: (v) => typeof v === "number",
   scan_staged: (v) => typeof v === "boolean",
   allow_merge_commits: (v) => typeof v === "boolean",
   allow_revert_commits: (v) => typeof v === "boolean",
   warn_only: (v) => typeof v === "boolean",
   output_json: (v) => typeof v === "boolean",
   allowed_scopes: (v) => Array.isArray(v),
-  template: (v) => typeof v === "string",
 };
 
-const FIELD_LABELS: Record<string, string> = {
-  min_summary_lines: "min_summary_lines",
-  max_summary_lines: "max_summary_lines",
-  scan_staged: "scan_staged",
-  allow_merge_commits: "allow_merge_commits",
-  allow_revert_commits: "allow_revert_commits",
-  warn_only: "warn_only",
-  output_json: "output_json",
-  allowed_scopes: "allowed_scopes",
-  template: "template",
+const EXPECTED_TYPES: Record<string, string> = {
+  scan_staged: "boolean",
+  allow_merge_commits: "boolean",
+  allow_revert_commits: "boolean",
+  warn_only: "boolean",
+  output_json: "boolean",
+  allowed_scopes: "array",
 };
 
 export function loadConfig(configPath?: string): ConfigResult {
@@ -66,9 +60,8 @@ export function loadConfig(configPath?: string): ConfigResult {
       if (check(value)) {
         clean[key] = value;
       } else {
-        const label = FIELD_LABELS[key] ?? key;
-        const expected = key === "allowed_scopes" ? "array" : key === "min_summary_lines" || key === "max_summary_lines" ? "number" : "boolean";
-        warnings.push(`${CONFIG_FILENAME}: '${label}' should be ${expected}, got ${typeof value}`);
+        const expected = EXPECTED_TYPES[key] ?? "unknown";
+        warnings.push(`${CONFIG_FILENAME}: '${key}' should be ${expected}, got ${typeof value}`);
       }
     } else {
       clean[key] = value;
@@ -78,37 +71,18 @@ export function loadConfig(configPath?: string): ConfigResult {
   return { config: clean, warnings };
 }
 
-export function applyConfig(
-  fileConfig: Record<string, unknown> | null,
-  cliArgs: {
-    minSummaryLines?: number | null;
-    maxSummaryLines?: number | null;
-    scanStaged?: boolean;
-    noMergeCommits?: boolean;
-    noRevertCommits?: boolean;
-    warnOnly?: boolean;
-    outputJson?: boolean;
-  },
-): ValidationConfig {
+export function applyConfig(fileConfig: Record<string, unknown> | null): ValidationConfig {
   const fc = fileConfig ?? {};
-
-  const minSummary =
-    cliArgs.minSummaryLines ?? (typeof fc.min_summary_lines === "number" ? fc.min_summary_lines : DEFAULT_CONFIG.minSummaryLines);
-  const maxSummary =
-    cliArgs.maxSummaryLines ?? (typeof fc.max_summary_lines === "number" ? fc.max_summary_lines : DEFAULT_CONFIG.maxSummaryLines);
 
   const allowedScopesRaw = fc.allowed_scopes;
   const allowedScopes = Array.isArray(allowedScopesRaw) ? (allowedScopesRaw as string[]) : null;
 
   return {
-    minSummaryLines: minSummary,
-    maxSummaryLines: maxSummary,
-    scanStaged: cliArgs.scanStaged || (typeof fc.scan_staged === "boolean" && fc.scan_staged),
-    allowMergeCommits: !cliArgs.noMergeCommits && (typeof fc.allow_merge_commits === "boolean" ? fc.allow_merge_commits : DEFAULT_CONFIG.allowMergeCommits),
-    allowRevertCommits: !cliArgs.noRevertCommits && (typeof fc.allow_revert_commits === "boolean" ? fc.allow_revert_commits : DEFAULT_CONFIG.allowRevertCommits),
-    warnOnly: cliArgs.warnOnly || (typeof fc.warn_only === "boolean" && fc.warn_only),
-    outputJson: cliArgs.outputJson || (typeof fc.output_json === "boolean" && fc.output_json),
+    scanStaged: typeof fc.scan_staged === "boolean" ? fc.scan_staged : DEFAULT_CONFIG.scanStaged,
+    allowMergeCommits: typeof fc.allow_merge_commits === "boolean" ? fc.allow_merge_commits : DEFAULT_CONFIG.allowMergeCommits,
+    allowRevertCommits: typeof fc.allow_revert_commits === "boolean" ? fc.allow_revert_commits : DEFAULT_CONFIG.allowRevertCommits,
+    warnOnly: typeof fc.warn_only === "boolean" ? fc.warn_only : DEFAULT_CONFIG.warnOnly,
+    outputJson: typeof fc.output_json === "boolean" ? fc.output_json : DEFAULT_CONFIG.outputJson,
     allowedScopes,
-    template: typeof fc.template === "string" ? fc.template : null,
   };
 }

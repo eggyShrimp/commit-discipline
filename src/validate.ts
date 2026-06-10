@@ -2,6 +2,9 @@ import { ALLOWED_TYPES, VAGUE_SUBJECTS, AI_TRAILERS, type ValidationConfig } fro
 
 const SUBJECT_PATTERN = /^(?<type>[a-z]+)(?:\((?<scope>[a-z0-9._/-]+)\))?: (?<text>.+)$/;
 
+const SUMMARY_MIN = 1;
+const SUMMARY_MAX = 12;
+
 export class CommitMessageValidator {
   constructor(private readonly config: ValidationConfig) {}
 
@@ -27,7 +30,7 @@ export class CommitMessageValidator {
     errors.push(...this.validateRequiredField(lines, "Why:"));
     errors.push(...this.validateRequiredField(lines, "Impact:"));
     errors.push(
-      ...this.validateBulletedSection(lines, "Summary:", this.config.minSummaryLines, this.config.maxSummaryLines),
+      ...this.validateBulletedSection(lines, "Summary:", SUMMARY_MIN, SUMMARY_MAX),
     );
     errors.push(...this.validateBulletedSection(lines, "Verification:", 1, 12));
     errors.push(...this.validateAiTrailer(lines));

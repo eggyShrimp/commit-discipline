@@ -1,20 +1,5 @@
 export const VERSION = "0.2.0";
 
-export const DEFAULT_TEMPLATE = `<type>(<scope>): <subject>
-
-Why: <reason this change is needed>
-Impact: <user-visible behavior, or "None">
-
-Summary:
-- <change 1>
-- <change 2>
-
-Verification:
-- <command or manual check and result>
-
-AI-Agent: <tool or agent name and role>
-Convention-Version: YYYY-MM-DD`;
-
 export const CONFIG_FILENAME = ".commit-discipline.config.json";
 
 export const ALLOWED_TYPES = new Set([
@@ -64,25 +49,19 @@ export const SECRET_PATTERNS: readonly RegExp[] = [
 ];
 
 export interface ValidationConfig {
-  minSummaryLines: number;
-  maxSummaryLines: number;
   scanStaged: boolean;
   allowMergeCommits: boolean;
   allowRevertCommits: boolean;
   warnOnly: boolean;
   outputJson: boolean;
   allowedScopes: string[] | null;
-  template: string | null;
 }
 
 export const DEFAULT_CONFIG: ValidationConfig = {
-  minSummaryLines: 1,
-  maxSummaryLines: 12,
   scanStaged: false,
   allowMergeCommits: true,
   allowRevertCommits: true,
   warnOnly: false,
   outputJson: false,
   allowedScopes: null,
-  template: null,
 };
