@@ -1,52 +1,118 @@
-# AI Commit Discipline
+# Commit Discipline
 
-This repository packages a reusable skill for AI-assisted commits. The skill helps an agent turn code changes into small, reviewable commits with clear intent, visible impact, verification notes, and AI attribution.
+A reusable skill and linter for AI-assisted commits. Enforces structured commit messages with intent, impact, verification, and AI attribution.
 
-The repository also includes a hard-check tool. Use the tool in a local `commit-msg` hook or in continuous integration to reject weak commit messages before they enter history.
+## Install
+
+```bash
+npx skills add <owner>/commit-discipline
+```
+
+Or clone directly:
+
+```bash
+git clone <repo-url> ~/.agents/skills/commit-discipline
+```
 
 ## Contents
 
-- `skills/ai-commit-discipline/SKILL.md` contains the agent workflow.
-- `skills/ai-commit-discipline/scripts/validate_commit_message.py` validates commit messages and optional staged diffs.
-- `skills/ai-commit-discipline/references/commit-message-schema.md` defines the reusable commit schema.
-- `tests/` contains representative validator tests.
+- `SKILL.md` — agent workflow definition
+- `src/` — TypeScript source for the commit message linter
+- `references/commit-message-schema.md` — schema specification
+- `tests/` — validator tests
 
-## Install The Skill
-
-Copy `skills/ai-commit-discipline` into your agent skills directory, or publish this repository to a skill registry that accepts Agent Skills-style packages.
+## Setup
 
 ```bash
-cp -R skills/ai-commit-discipline ~/.codex/skills/
+npm install
+npm run build
 ```
 
-## Use The Check Tool
+## Linter Usage
 
-Validate a commit message file:
+Validate a commit message:
 
 ```bash
-python3 skills/ai-commit-discipline/scripts/validate_commit_message.py .git/COMMIT_EDITMSG
+node dist/index.js .git/COMMIT_EDITMSG
 ```
 
-Install a local `commit-msg` hook:
+Install hooks:
 
 ```bash
-python3 skills/ai-commit-discipline/scripts/validate_commit_message.py --install-hook
+node dist/index.js --install-hook
+node dist/index.js --install-template-hook
 ```
 
-Use stricter summary length for projects that require detailed bodies:
+Print the default commit template:
 
 ```bash
-python3 skills/ai-commit-discipline/scripts/validate_commit_message.py \
+node dist/index.js --print-template
+```
+
+Warn-only mode (exit 0 even on failure):
+
+```bash
+node dist/index.js --warn-only .git/COMMIT_EDITMSG
+```
+
+JSON output for CI:
+
+```bash
+node dist/index.js --json .git/COMMIT_EDITMSG
+```
+
+Strict summary length:
+
+```bash
+node dist/index.js \
   --min-summary-lines 4 \
   --max-summary-lines 12 \
   .git/COMMIT_EDITMSG
 ```
 
+## Configuration
+
+Create `.commit-discipline.config.json` in the project root. CLI flags override config values.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `min_summary_lines` | int | `1` | Minimum bullet points in Summary section |
+| `max_summary_lines` | int | `12` | Maximum bullet points in Summary section |
+| `allowed_scopes` | list[str] | `null` | Scope whitelist. `null` means any scope is allowed |
+| `allow_merge_commits` | bool | `true` | Skip validation for git-generated merge messages |
+| `allow_revert_commits` | bool | `true` | Skip validation for git-generated revert messages |
+| `warn_only` | bool | `false` | Exit 0 even on validation failure (warnings only) |
+| `output_json` | bool | `false` | Output results as JSON |
+| `scan_staged` | bool | `false` | Scan staged diff for secrets before validating |
+| `template` | string | `null` | Custom commit template for `--print-template` and hooks |
+
+Example (strict project):
+
+```json
+{
+  "min_summary_lines": 3,
+  "max_summary_lines": 8,
+  "allowed_scopes": ["core", "api", "ui", "docs"],
+  "allow_merge_commits": false,
+  "allow_revert_commits": false,
+  "scan_staged": true
+}
+```
+
+Example (lenient project):
+
+```json
+{
+  "min_summary_lines": 1,
+  "warn_only": true
+}
+```
+
 ## Validate This Repository
 
 ```bash
-python3 -m unittest discover -s tests
-python3 skills/ai-commit-discipline/scripts/validate_commit_message.py tests/fixtures/valid_commit.txt
+npm test
+node dist/index.js tests/fixtures/valid_commit.txt
 ```
 
 ## License

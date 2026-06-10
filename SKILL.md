@@ -1,10 +1,12 @@
 ---
-name: ai-commit-discipline
-description: Prepare, write, review, or validate AI-assisted commits. Use when Codex needs to commit changes, split a diff into reviewable commits, write a commit message, add AI attribution, record verification, install a commit-msg check, or enforce commit hygiene for agent-made code changes.
+name: commit-discipline
+description: Prepare, write, review, or validate AI-assisted commits. Use when the agent needs to commit changes, split a diff into reviewable commits, write a commit message, add AI attribution, record verification, install a commit-msg check, or enforce commit hygiene for agent-made code changes.
 license: MIT
+compatibility: requires Node.js 18+ and git
 metadata:
   author: Yuan
-  version: "0.1.0"
+  version: "0.2.0"
+  topics: git, code-quality, devops, agent-workflows
 ---
 
 # AI Commit Discipline
@@ -66,10 +68,12 @@ Record AI participation with one trailer. Prefer `AI-Agent:` because it states t
 
 Use these values consistently:
 
-- `AI-Agent: Codex assisted with implementation and verification`
-- `AI-Agent: Codex generated the initial patch; maintainer reviewed`
-- `Co-developed-by: Codex`
-- `AI-Generated: Codex`
+- `AI-Agent: <agent-name> assisted with implementation and verification`
+- `AI-Agent: <agent-name> generated the initial patch; maintainer reviewed`
+- `Co-developed-by: <agent-name>`
+- `AI-Generated: <agent-name>`
+
+Replace `<agent-name>` with the actual agent or tool name (e.g. `Codex`, `Claude Code`, `Cursor`, `Copilot`).
 
 Add human `Co-authored-by:` trailers only when the repository uses GitHub co-author attribution and the required name and email are known.
 
@@ -78,14 +82,14 @@ Add human `Co-authored-by:` trailers only when the repository uses GitHub co-aut
 The bundled tool validates the message format and can install a local `commit-msg` hook:
 
 ```bash
-python3 <skill>/scripts/validate_commit_message.py .git/COMMIT_EDITMSG
-python3 <skill>/scripts/validate_commit_message.py --install-hook
+node <skill>/dist/index.js .git/COMMIT_EDITMSG
+node <skill>/dist/index.js --install-hook
 ```
 
 Use stricter summary requirements in repositories that expect fuller commit bodies:
 
 ```bash
-python3 <skill>/scripts/validate_commit_message.py --min-summary-lines 4 --max-summary-lines 12 .git/COMMIT_EDITMSG
+node <skill>/dist/index.js --min-summary-lines 4 --max-summary-lines 12 .git/COMMIT_EDITMSG
 ```
 
 If the repository already has a commit convention, adapt the message to that convention first. Keep the AI attribution and verification record unless the project explicitly forbids them.

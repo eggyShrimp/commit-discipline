@@ -9,10 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["18", "20", "22"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
-      - run: python3 -m unittest discover -s tests
-      - run: python3 skills/ai-commit-discipline/scripts/validate_commit_message.py tests/fixtures/valid_commit.txt
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run validate
