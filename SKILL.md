@@ -18,8 +18,8 @@ Use this skill to create commits that a maintainer can review without reconstruc
 First use in a repository:
 
 1. Check whether automatic commit-message enforcement is already active.
-2. If activation is needed, read `references/hook-setup.md` and follow the one-time Git hook setup flow.
-3. If enforcement is already active, do not read setup-only references; continue with daily use.
+2. If activation is needed, follow the ## Hook Setup steps below.
+3. If enforcement is already active, continue with daily use.
 
 Daily use:
 
@@ -99,6 +99,48 @@ node <skill>/dist/index.js --json .git/COMMIT_EDITMSG
 ```
 
 If the repository already has a commit convention, adapt the message to that convention first. Keep the AI attribution and verification record unless the project explicitly forbids them.
+
+## Hook Setup
+
+Installing the skill makes it available to the agent. It does not automatically modify `.git/hooks`.
+
+### Enable Enforcement
+
+From inside the target Git repository, run:
+
+```bash
+node <skill>/dist/index.js --install-hook
+```
+
+This installs or updates the `commit-msg` hook. The hook runs the bundled validator on every commit message and exits non-zero on failure.
+
+To also pre-fill the commit template in empty commit messages, run:
+
+```bash
+node <skill>/dist/index.js --install-template-hook
+```
+
+This installs a `prepare-commit-msg` hook that inserts the commit template when no message exists yet.
+
+### Existing Hooks
+
+Before installing, check whether `.git/hooks/commit-msg` or the configured `core.hooksPath` already contains a `commit-discipline` block.
+
+If a hook already exists, preserve the existing content and add only the `commit-discipline` block. If the block already exists, leave it in place unless the user asks to refresh it.
+
+### Remove Enforcement
+
+To remove the `commit-msg` hook:
+
+```bash
+rm .git/hooks/commit-msg
+```
+
+To remove the `prepare-commit-msg` hook:
+
+```bash
+rm .git/hooks/prepare-commit-msg
+```
 
 ## Final Report
 
