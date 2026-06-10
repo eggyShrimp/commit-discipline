@@ -11,7 +11,7 @@ on:
       - "package-lock.json"
   push:
     branches:
-      - main
+      - dev
     paths:
       - "SKILL.md"
       - "references/**"
