@@ -30,6 +30,7 @@ jobs:
           cp SKILL.md /tmp/release/
           cp -r references/ /tmp/release/
           cp LICENSE /tmp/release/
+          cp README.md /tmp/release/
 
           node -e "
             const pkg = require('./package.json');
