@@ -119,7 +119,7 @@ const cases = [
       "Run or recommend the bundled validator.",
       "Return a complete valid commit message shape.",
     ],
-    prompt: "A draft commit message failed validation because it only says 'fix: update'. Repair the commit message for a change that preserves existing hooks while adding hook setup guidance.",
+    prompt: "A draft commit message failed the bundled validator because it only says 'fix: update'. Repair the commit message for a change that preserves existing hooks while adding hook setup guidance, and include the validation command that should be run after the repair.",
     checks: [
       { name: "validator used", expect: "bundled validator is used or recommended", test: (r) => (r.commands || []).some((c) => c.includes("dist/index.js")) || (r.commit_message || "").includes("dist/index.js") || /validator|validate/i.test(r.rationale || "") },
       { name: "not bypassed", expect: "rationale does not suggest bypassing validation", test: (r) => !/bypass|skip.*validat|ignore.*validat/i.test(r.rationale || "") },
