@@ -1,0 +1,61 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build and prepare release
+        run: |
+          npm ci
+          npm run build
+
+          mkdir -p /tmp/release
+          cp -r dist/ /tmp/release/
+          cp SKILL.md /tmp/release/
+          cp -r references/ /tmp/release/
+          cp LICENSE /tmp/release/
+
+          node -e "
+            const pkg = require('./package.json');
+            const minimal = {
+              name: pkg.name,
+              version: pkg.version,
+              description: pkg.description,
+              type: 'module',
+              bin: pkg.bin,
+              engines: pkg.engines,
+              license: pkg.license
+            };
+            require('fs').writeFileSync(
+              '/tmp/release/package.json',
+              JSON.stringify(minimal, null, 2) + '\n'
+            );
+          "
+
+      - name: Push to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan release-tmp
+          git rm -rf . 2>/dev/null || true
+          cp -r /tmp/release/* .
+          git add -A
+          git commit -m "release ${GITHUB_REF_NAME}"
+          git push origin release-tmp:main --force
