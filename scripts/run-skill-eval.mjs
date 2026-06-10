@@ -43,7 +43,6 @@ if (!env.OPENAI_API_KEY) {
 const baseUrl = (env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
 const model = env.SKILL_EVAL_MODEL || env.OPENAI_MODEL || "deepseek-v4-flash";
 const skill = readFileSync("SKILL.md", "utf-8");
-const hookSetup = readFileSync("references/hook-setup.md", "utf-8");
 
 const cases = [
   {
@@ -57,7 +56,7 @@ const cases = [
     ],
     prompt: "This is the first use of commit-discipline in a Git repository. Enable automatic commit-message enforcement while preserving an existing commit-msg hook.",
     checks: [
-      { name: "setup reference", expect: "references/hook-setup.md is read", test: (r) => r.read_references?.includes("references/hook-setup.md") },
+      { name: "setup reference", expect: "SKILL.md is read", test: (r) => r.read_references?.includes("SKILL.md") },
       { name: "install script", expect: "scripts/install-hook.mjs is used", test: (r) => r.commands?.some((c) => c.includes("scripts/install-hook.mjs")) },
       { name: "preserve hook", expect: "rationale mentions preserving existing hook content", test: (r) => /preserv|existing/i.test(r.rationale || "") },
     ],
@@ -75,7 +74,7 @@ const cases = [
     checks: [
       { name: "no install script", expect: "install-hook is not run", test: (r) => !(r.commands || []).some((c) => c.includes("install-hook")) },
       { name: "already set up", expect: "rationale identifies setup as already active", test: (r) => /already|active|installed|set up|enabled/i.test(r.rationale || "") },
-      { name: "daily path", expect: "hook setup reference is not needed", test: (r) => !(r.read_references || []).includes("references/hook-setup.md") },
+      { name: "daily path", expect: "hook setup instructions are not needed", test: (r) => !/(?:install|setup|hook).*(?:script|hook|setup)/i.test(r.rationale || "") },
     ],
   },
   {
@@ -89,7 +88,7 @@ const cases = [
     ],
     prompt: "Prepare a commit message for a normal daily change after commit-discipline has already been set up. The diff adds tests and updates hook handling.",
     checks: [
-      { name: "no setup reference", expect: "references/hook-setup.md is not read", test: (r) => !(r.read_references || []).includes("references/hook-setup.md") },
+      { name: "no setup reference", expect: "hook setup instructions are not needed", test: (r) => !/(?:install|setup|hook).*(?:script|hook|setup)/i.test(r.rationale || "") },
       { name: "no install script", expect: "install-hook is not run", test: (r) => !(r.commands || []).some((c) => c.includes("install-hook")) },
       { name: "commit fields", expect: "all required sections are present", test: (r) => ["Why:", "Impact:", "Summary:", "Verification:", "AI-Agent:", "Convention-Version:"].every((s) => (r.commit_message || "").includes(s)) },
     ],
@@ -157,9 +156,6 @@ async function runCase(testCase) {
           "<SKILL.md>",
           skill,
           "</SKILL.md>",
-          "<references/hook-setup.md>",
-          hookSetup,
-          "</references/hook-setup.md>",
           "<task>",
           testCase.prompt,
           "</task>",
