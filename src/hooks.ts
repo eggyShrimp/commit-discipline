@@ -1,23 +1,75 @@
 import { execSync } from "node:child_process";
-import { mkdirSync, writeFileSync, chmodSync, statSync, unlinkSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync, chmodSync, statSync, unlinkSync, existsSync, readFileSync } from "node:fs";
+import { isAbsolute, join, resolve } from "node:path";
+
+const HOOK_START = "# commit-discipline start";
+const HOOK_END = "# commit-discipline end";
+const HOOK_BLOCK_PATTERN = new RegExp(
+  `\\n?${HOOK_START}\\n[\\s\\S]*?\\n${HOOK_END}\\n?`,
+  "m",
+);
 
 function getGitDir(): string {
   try {
-    return execSync("git rev-parse --git-dir", { encoding: "utf-8" }).trim();
+    const gitDir = execSync("git rev-parse --git-dir", { encoding: "utf-8" }).trim();
+    return isAbsolute(gitDir) ? gitDir : resolve(process.cwd(), gitDir);
   } catch {
     throw new Error("not inside a git repository");
   }
 }
 
-export function installHook(scriptPath: string): void {
-  const gitDir = getGitDir();
-  const hookPath = join(gitDir, "hooks", "commit-msg");
-  mkdirSync(join(gitDir, "hooks"), { recursive: true });
+function getRepoRoot(): string {
+  try {
+    return execSync("git rev-parse --show-toplevel", { encoding: "utf-8" }).trim();
+  } catch {
+    throw new Error("not inside a git repository");
+  }
+}
 
-  const hook = `#!/bin/sh
-# commit-discipline hook
-node "${scriptPath}" "$1"
+function getConfiguredHooksPath(): string | null {
+  try {
+    const hooksPath = execSync("git config --get core.hooksPath", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    }).trim();
+    return hooksPath || null;
+  } catch {
+    return null;
+  }
+}
+
+function getHooksDir(): string {
+  const configured = getConfiguredHooksPath();
+  if (configured) {
+    return isAbsolute(configured) ? configured : resolve(getRepoRoot(), configured);
+  }
+  return join(getGitDir(), "hooks");
+}
+
+function buildHookBlock(scriptPath: string): string {
+  return `${HOOK_START}
+node "${scriptPath}" "$1" || exit $?
+${HOOK_END}`;
+}
+
+function upsertHookBlock(content: string, block: string): string {
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\s+$/, "");
+  if (HOOK_BLOCK_PATTERN.test(normalized)) {
+    return `${normalized.replace(HOOK_BLOCK_PATTERN, `\n${block}\n`).trimEnd()}\n`;
+  }
+  return `${normalized}\n\n${block}\n`;
+}
+
+export function installHook(scriptPath: string): void {
+  const hooksDir = getHooksDir();
+  const hookPath = join(hooksDir, "commit-msg");
+  mkdirSync(hooksDir, { recursive: true });
+
+  const hook = existsSync(hookPath)
+    ? upsertHookBlock(readFileSync(hookPath, "utf-8"), buildHookBlock(scriptPath))
+    : `#!/bin/sh
+
+${buildHookBlock(scriptPath)}
 `;
 
   writeFileSync(hookPath, hook, { mode: 0o755 });
@@ -26,19 +78,26 @@ node "${scriptPath}" "$1"
 }
 
 export function removeHook(): void {
-  const gitDir = getGitDir();
-  const hookPath = join(gitDir, "hooks", "commit-msg");
+  const hookPath = join(getHooksDir(), "commit-msg");
 
   if (!existsSync(hookPath)) {
     console.log("no commit-msg hook found");
     return;
   }
 
-  const content = execSync(`cat "${hookPath}"`, { encoding: "utf-8" });
-  if (!content.includes("commit-discipline")) {
+  const content = readFileSync(hookPath, "utf-8").replace(/\r\n/g, "\n");
+  if (!HOOK_BLOCK_PATTERN.test(content)) {
     throw new Error("commit-msg hook exists but was not installed by commit-discipline");
   }
 
-  unlinkSync(hookPath);
-  console.log(`removed commit-msg hook: ${hookPath}`);
+  const next = content.replace(HOOK_BLOCK_PATTERN, "\n").trim();
+  if (!next || next === "#!/bin/sh") {
+    unlinkSync(hookPath);
+    console.log(`removed commit-msg hook: ${hookPath}`);
+    return;
+  }
+
+  writeFileSync(hookPath, `${next}\n`, { mode: 0o755 });
+  chmodSync(hookPath, statSync(hookPath).mode | 0o111);
+  console.log(`removed commit-discipline block from commit-msg hook: ${hookPath}`);
 }

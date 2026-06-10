@@ -10,6 +10,7 @@
     "build": "tsc",
     "pretest": "npm run build",
     "test": "vitest run",
+    "test:skill": "node scripts/run-skill-eval.mjs",
     "test:watch": "vitest",
     "lint": "oxlint .",
     "typecheck": "tsc --noEmit",

@@ -1,6 +1,6 @@
 ---
 name: commit-discipline
-description: Prepare, write, review, or validate AI-assisted commits. Use when the agent needs to commit changes, split a diff into reviewable commits, write a commit message, add AI attribution, record verification, install a commit-msg check, or enforce commit hygiene for agent-made code changes.
+description: Prepare, write, review, or validate AI-assisted commits. Use when the agent needs to commit changes, split a diff into reviewable commits, write a commit message, add AI attribution, record verification, or enforce commit hygiene for agent-made code changes.
 license: MIT
 compatibility: requires Node.js 18+ and git
 metadata:
@@ -9,13 +9,19 @@ metadata:
   topics: git, code-quality, devops, agent-workflows
 ---
 
-# AI Commit Discipline
+# Commit Discipline
 
 Use this skill to create commits that a maintainer can review without reconstructing the agent's reasoning from chat history. The commit must explain why the change exists, what user-visible effect it has, what changed at a high level, how the work was verified, and how AI participated.
 
 ## Commit Workflow
 
-Follow this sequence before writing the commit:
+First use in a repository:
+
+1. Check whether automatic commit-message enforcement is already active.
+2. If activation is needed, read `references/hook-setup.md` and follow the one-time Git hook setup flow.
+3. If enforcement is already active, do not read setup-only references; continue with daily use.
+
+Daily use:
 
 1. Inspect repository status and the current branch.
 2. Read the diff before deciding commit scope.
@@ -23,6 +29,7 @@ Follow this sequence before writing the commit:
 4. Verify the change with the strongest practical command for the repository.
 5. Write the commit message from the diff and the verification result.
 6. Run the bundled validator before committing when the repository allows local scripts.
+7. If a commit message fails validation, repair the message and run the bundled validator again.
 
 Do not hide uncertainty with fallback code or vague wording. If the diff exposes a broken existing mechanism, describe the fix to that mechanism instead of presenting the change as a workaround.
 
@@ -75,16 +82,14 @@ Use these values consistently:
 
 Replace `<agent-name>` with the actual agent or tool name (e.g. `Codex`, `Claude Code`, `Cursor`, `Copilot`).
 
-Add human `Co-authored-by:` trailers only when the repository uses GitHub co-author attribution and the required name and email are known.
+Add human `Co-authored-by:` trailers only when the repository or hosting platform recognizes them and the required name and email are known. Do not assume every Git host displays or interprets the same trailers.
 
 ## Validation
 
-The bundled tool validates the message format and can install a local `commit-msg` hook:
+The bundled tool validates the message format:
 
 ```bash
 node <skill>/dist/index.js .git/COMMIT_EDITMSG
-node <skill>/dist/index.js --install-hook
-node <skill>/dist/index.js --remove-hook
 ```
 
 For machine-readable output (useful in CI or agent pipelines):

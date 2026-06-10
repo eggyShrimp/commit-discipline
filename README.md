@@ -38,6 +38,18 @@ commit-discipline --version          # print version
 commit-discipline --help             # show help
 ```
 
+## Enable Git Hook From The Skill
+
+Installing the skill with `npx skills add` makes the instructions available to the agent, but it does not automatically modify `.git/hooks`.
+
+From the target repository, run:
+
+```bash
+node <skill>/scripts/install-hook.mjs
+```
+
+The script uses the bundled JavaScript validator that ships with the skill, then installs or updates the `commit-msg` hook without replacing existing hook content.
+
 ## Configuration
 
 Create `.commit-discipline.config.json` in the project root.
@@ -76,6 +88,24 @@ Example:
 npm test
 node dist/index.js tests/fixtures/valid_commit.txt
 ```
+
+## Skill Behavior Eval
+
+```bash
+npm run test:skill
+```
+
+The skill eval sends direct OpenAI-compatible model requests and checks whether the skill instructions produce the expected first-use and daily-use behavior.
+
+Use these environment variables:
+
+```bash
+OPENAI_API_KEY=...
+OPENAI_BASE_URL=https://api.deepseek.com/v1
+SKILL_EVAL_MODEL=deepseek-v4-flash
+```
+
+For local runs, copy `.skill-eval.env.example` to `.skill-eval.env`. The local file is ignored by git. In GitHub Actions, set `OPENAI_API_KEY` and `OPENAI_BASE_URL` as repository secrets, and optionally set `SKILL_EVAL_MODEL` as a repository variable. If no key is configured, the eval skips without failing.
 
 ## License
 

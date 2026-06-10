@@ -36,6 +36,46 @@ describe("installHook", () => {
     expect(content).toContain("script.js");
   });
 
+  it("preserves existing commit-msg hook content", () => {
+    tmpDir = makeTmpGitRepo();
+    process.chdir(tmpDir);
+    const hookPath = join(tmpDir, ".git", "hooks", "commit-msg");
+    writeFileSync(hookPath, "#!/bin/sh\necho custom hook\n", { mode: 0o755 });
+
+    installHook("/test/script.js");
+
+    const content = readFileSync(hookPath, "utf-8");
+    expect(content).toContain("echo custom hook");
+    expect(content).toContain("# commit-discipline start");
+    expect(content).toContain("script.js");
+  });
+
+  it("updates existing commit-discipline block", () => {
+    tmpDir = makeTmpGitRepo();
+    process.chdir(tmpDir);
+    installHook("/test/old-script.js");
+    installHook("/test/new-script.js");
+
+    const hookPath = join(tmpDir, ".git", "hooks", "commit-msg");
+    const content = readFileSync(hookPath, "utf-8");
+    expect(content).not.toContain("old-script.js");
+    expect(content).toContain("new-script.js");
+    expect(content.match(/# commit-discipline start/g)?.length).toBe(1);
+  });
+
+  it("installs into configured hooks path", () => {
+    tmpDir = makeTmpGitRepo();
+    process.chdir(tmpDir);
+    execSync("git config core.hooksPath custom-hooks", { stdio: "pipe" });
+
+    installHook("/test/script.js");
+
+    const defaultHookPath = join(tmpDir, ".git", "hooks", "commit-msg");
+    const customHookPath = join(tmpDir, "custom-hooks", "commit-msg");
+    expect(existsSync(defaultHookPath)).toBe(false);
+    expect(existsSync(customHookPath)).toBe(true);
+  });
+
   it("fails outside git repo", () => {
     tmpDir = join(import.meta.dirname ?? process.cwd(), `.test-hooks-nogit-${Date.now()}`);
     mkdirSync(tmpDir, { recursive: true });
@@ -62,6 +102,34 @@ describe("removeHook", () => {
     const hookPath = join(tmpDir, ".git", "hooks", "commit-msg");
     expect(existsSync(hookPath)).toBe(true);
     removeHook();
+    expect(existsSync(hookPath)).toBe(false);
+  });
+
+  it("removes only commit-discipline block from shared hook", () => {
+    tmpDir = makeTmpGitRepo();
+    process.chdir(tmpDir);
+    const hookPath = join(tmpDir, ".git", "hooks", "commit-msg");
+    writeFileSync(hookPath, "#!/bin/sh\necho custom hook\n", { mode: 0o755 });
+    installHook("/test/script.js");
+
+    removeHook();
+
+    expect(existsSync(hookPath)).toBe(true);
+    const content = readFileSync(hookPath, "utf-8");
+    expect(content).toContain("echo custom hook");
+    expect(content).not.toContain("commit-discipline");
+  });
+
+  it("removes from configured hooks path", () => {
+    tmpDir = makeTmpGitRepo();
+    process.chdir(tmpDir);
+    execSync("git config core.hooksPath custom-hooks", { stdio: "pipe" });
+    installHook("/test/script.js");
+    const hookPath = join(tmpDir, "custom-hooks", "commit-msg");
+    expect(existsSync(hookPath)).toBe(true);
+
+    removeHook();
+
     expect(existsSync(hookPath)).toBe(false);
   });
 

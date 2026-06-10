@@ -1,0 +1,41 @@
+name: skill-eval
+
+on:
+  pull_request:
+    paths:
+      - "SKILL.md"
+      - "references/**"
+      - "scripts/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+  push:
+    branches:
+      - main
+    paths:
+      - "SKILL.md"
+      - "references/**"
+      - "scripts/**"
+      - "src/**"
+      - "package.json"
+      - "package-lock.json"
+
+jobs:
+  skill-eval:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+      SKILL_EVAL_MODEL: ${{ vars.SKILL_EVAL_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Run skill eval
+        if: env.OPENAI_API_KEY != ''
+        run: npm run test:skill
+      - name: Skip skill eval
+        if: env.OPENAI_API_KEY == ''
+        run: echo "No OPENAI_API_KEY configured; skipping skill eval."
