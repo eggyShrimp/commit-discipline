@@ -55,34 +55,25 @@ Convention-Version: 2026-05-18
 
 ## Project Overrides
 
-Projects may tighten or loosen the schema via `.commit-discipline.config.json`. CLI flags override config values.
+Projects may tighten or loosen the schema via `.commit-discipline.config.json`.
 
 ### Config Fields
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `min_summary_lines` | int | `1` | Minimum bullet points in Summary section |
-| `max_summary_lines` | int | `12` | Maximum bullet points in Summary section |
-| `allowed_scopes` | list[str] | `null` | Scope whitelist. `null` means any scope is allowed |
-| `allow_merge_commits` | bool | `true` | Skip validation for git-generated merge messages |
-| `allow_revert_commits` | bool | `true` | Skip validation for git-generated revert messages |
-| `warn_only` | bool | `false` | Exit 0 even on validation failure (warnings only) |
-| `output_json` | bool | `false` | Output results as JSON |
-| `scan_staged` | bool | `false` | Scan staged diff for secrets before validating |
-| `template` | string | `null` | Custom commit template for `--print-template` and hooks |
+| `scan_staged` | `boolean` | `false` | Scan staged diff for secrets before validating |
+| `allow_merge_commits` | `boolean` | `true` | Skip validation for git-generated merge messages |
+| `allow_revert_commits` | `boolean` | `true` | Skip validation for git-generated revert messages |
+| `warn_only` | `boolean` | `false` | Exit 0 even on validation failure (warnings only) |
+| `output_json` | `boolean` | `false` | Output results as JSON |
+| `allowed_scopes` | `string[]` | `null` | Scope whitelist. `null` means any scope is allowed |
 
 ### CLI Flags
 
 | Flag | Description |
 |------|-------------|
-| `--min-summary-lines N` | Override config `min_summary_lines` |
-| `--max-summary-lines N` | Override config `max_summary_lines` |
-| `--no-merge-commits` | Force validation of merge commit messages |
-| `--no-revert-commits` | Force validation of revert commit messages |
-| `--warn-only` | Output warnings instead of errors, exit 0 |
 | `--json` | Output results as JSON |
-| `--print-template` | Print the effective commit template |
 | `--install-hook` | Install `commit-msg` hook |
-| `--install-template-hook` | Install `prepare-commit-msg` hook |
-| `--scan-staged` | Scan staged diff for secrets |
+| `--remove-hook` | Remove `commit-msg` hook |
 | `--version` | Print version |
+| `--help` | Show help |
